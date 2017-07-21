@@ -30,7 +30,11 @@ extension File {
 		let _ = fcntl(fd, F_SETFL, flags | O_NONBLOCK)
 		var one = Int32(1)
 		setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, UInt32(MemoryLayout<Int32>.size))
-		setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &one, UInt32(MemoryLayout<Int32>.size));
+        #if os(Linux)
+            setsockopt(fd, SOL_SOCKET, Int32(MSG_NOSIGNAL), &one, UInt32(MemoryLayout<Int32>.size));
+        #else
+            setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &one, UInt32(MemoryLayout<Int32>.size));
+        #endif
 	}
 }
 
@@ -81,7 +85,11 @@ func sleep(seconds: Double) {
 	let milliseconds = Int(seconds * 1000.0)
 	var tv = timeval()
 	tv.tv_sec = milliseconds/1000
-	tv.tv_usec = Int32((milliseconds%1000)*1000)
+    #if os(Linux)
+        tv.tv_usec = Int((milliseconds%1000)*1000)
+    #else
+        tv.tv_usec = Int32((milliseconds%1000)*1000)
+    #endif
 	select(0, nil, nil, nil, &tv)
 }
 
